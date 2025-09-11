@@ -16,4 +16,16 @@
 
 - lxc start <name> --console=vga (Запускает контейнер с выводом в консоль VGA)
 
+- lxc image list
+
+- lxc init <VM-name> --empty --vm
+
+- lxc config device add <VM-name> install disk source=/path/to/your.iso boot.priority=10
+You can then reboot the VM and install necessary drivers (like virtio) for better performance
+
+- lxc stop --force <name>
+
+- lxc config set <name> limits.cpu=4
+
+- lxc config set <name> limits.memory=2GB
 
