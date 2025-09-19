@@ -19,11 +19,9 @@ struct Node
     Node(char s = 0) : sym(s), rule(-1) {}
 };
 
-// Проверка: символ — нетерминал (заглавная буква)
 bool is_nonterm(char c) { return c >= 'A' && c <= 'Z'; }
 bool is_terminal(char c) { return !is_nonterm(c); }
 
-// Отображение правил: номер_правила -> пара(lhs, rhs_string)
 map<int, pair<char, string>> productions;
 
 shared_ptr<Node> deep_copy(const shared_ptr<Node> &root)
@@ -37,33 +35,23 @@ shared_ptr<Node> deep_copy(const shared_ptr<Node> &root)
     return n;
 }
 
-// Собрать листья (слева направо) в вектор
 void collect_leaves(const shared_ptr<Node> &node, vector<shared_ptr<Node>> &leaves)
 {
     if (node->ch.empty())
-    {
         leaves.push_back(node);
-    }
     else
-    {
         for (auto &c : node->ch)
             collect_leaves(c, leaves);
-    }
 }
 
-// Раскрыть лист 'leaf' с помощью продукции (lhs -> rhs) и установить номер правила
 void expand_leaf(shared_ptr<Node> leaf, int rule_num, const string &rhs)
 {
     leaf->rule = rule_num;
     leaf->ch.clear();
     for (char c : rhs)
-    {
-        auto child = make_shared<Node>(c);
-        leaf->ch.push_back(child);
-    }
+        leaf->ch.push_back(make_shared<Node>(c));
 }
 
-// Проверить, что все листья — терминалы
 bool leaves_all_terminals(const shared_ptr<Node> &root)
 {
     vector<shared_ptr<Node>> leaves;
@@ -74,37 +62,21 @@ bool leaves_all_terminals(const shared_ptr<Node> &root)
     return true;
 }
 
-// Построить линейную скобочную форму:
 string linear_form(const shared_ptr<Node> &node)
 {
     if (node->ch.empty())
-    {
-        // лист: терминал или нераскрытый нетерминал
-        string s(1, node->sym);
-        return s;
-    }
-    else
-    {
-        string res;
-        res.push_back(node->sym);
-        if (node->rule != -1)
-            res += to_string(node->rule);
-        res += "(";
-        bool first = true;
-        for (auto &c : node->ch)
-        {
-            if (!first)
-                res += "";
-            res += linear_form(c);
-            first = false;
-        }
-        res += ")";
-        return res;
-    }
+        return string(1, node->sym);
+    string res;
+    res.push_back(node->sym);
+    if (node->rule != -1)
+        res += to_string(node->rule);
+    res += "(";
+    for (auto &c : node->ch)
+        res += linear_form(c);
+    res += ")";
+    return res;
 }
 
-// Собрать последовательность правил левого вывода из дерева:
-// посещаем узел: если раскрыт (rule!=-1), добавляем правило, затем рекурсивно обходим детей слева направо
 void collect_leftmost_seq(const shared_ptr<Node> &node, vector<int> &seq)
 {
     if (node->ch.empty())
@@ -115,13 +87,31 @@ void collect_leftmost_seq(const shared_ptr<Node> &node, vector<int> &seq)
         collect_leftmost_seq(c, seq);
 }
 
-// Поиск в глубину/бэктрекинг для применения заданной последовательности правил
-// возвращает true и устанавливает 'result_tree' при успехе
+// --- Новый: вывод текущей цепочки ---
+void print_current_chain(int step, const shared_ptr<Node> &tree, int ruleNum)
+{
+    vector<shared_ptr<Node>> leaves;
+    collect_leaves(tree, leaves);
+    bool added = false;
+
+    for (auto &l : leaves)
+    {
+        cout << (l->sym);
+        if (!added && is_nonterm(l->sym))
+        {
+            cout << ruleNum;
+            added = true;
+        }
+    }
+
+    cout << " => ";
+}
+
+// DFS с выводом цепочки на каждом шаге
 bool dfs_try(const shared_ptr<Node> &tree, const vector<int> &seq, int idx, shared_ptr<Node> &result_tree)
 {
     if (idx == (int)seq.size())
     {
-        // все правила применены: проверяем, что все листья терминальные
         if (leaves_all_terminals(tree))
         {
             result_tree = tree;
@@ -130,37 +120,91 @@ bool dfs_try(const shared_ptr<Node> &tree, const vector<int> &seq, int idx, shar
         else
             return false;
     }
+
     int rule_num = seq[idx];
     if (productions.find(rule_num) == productions.end())
         return false;
+
     char lhs = productions[rule_num].first;
     string rhs = productions[rule_num].second;
 
-    // собрать листья текущего дерева (слева направо), попытаться раскрыть любой лист с символом lhs
     vector<shared_ptr<Node>> leaves;
     collect_leaves(tree, leaves);
+
+    shared_ptr<Node> newtree;
 
     bool anyAttempt = false;
     for (size_t i = 0; i < leaves.size(); ++i)
     {
         if (leaves[i]->sym == lhs)
         {
+
+            print_current_chain(i, tree, rule_num);
+
             anyAttempt = true;
-            auto newtree = deep_copy(tree);
-            // найти i-й лист в копии:
+            newtree = deep_copy(tree);
             vector<shared_ptr<Node>> newleaves;
             collect_leaves(newtree, newleaves);
-            // раскрыть
             expand_leaf(newleaves[i], rule_num, rhs);
-            // рекурсия
+
             if (dfs_try(newtree, seq, idx + 1, result_tree))
                 return true;
         }
     }
-    // Если подходящего LHS не найдено -> тупик
+
     if (!anyAttempt)
         return false;
     return false;
+}
+
+void leftmost_derivation(const vector<int> &seq)
+{
+    auto tree = make_shared<Node>('S');
+    for (int rule_num : seq)
+    {
+        // собираем листья
+        vector<shared_ptr<Node>> leaves;
+        collect_leaves(tree, leaves);
+
+        // ищем левыйmost нетерминал, который подходит под правило
+        char lhs = productions[rule_num].first;
+        string rhs = productions[rule_num].second;
+        bool applied = false;
+        for (auto &l : leaves)
+        {
+            if (l->sym == lhs)
+            {
+                expand_leaf(l, rule_num, rhs);
+                applied = true;
+                break;
+            }
+        }
+        if (!applied)
+        {
+            cout << "Правило " << rule_num << " не может быть применено. Прерывание.\n";
+            return;
+        }
+
+        // вывод текущей цепочки
+        bool used = false;
+        for (auto &l : leaves)
+        {
+            cout << l->sym;
+            if (!used && is_nonterm(l->sym))
+            {
+                cout << rule_num;
+                used = true;
+            }
+        }
+        cout << " => ";
+    }
+
+    // вывод финальной цепочки
+    vector<shared_ptr<Node>> leaves;
+    collect_leaves(tree, leaves);
+    for (auto &l : leaves)
+        cout << l->sym;
+    cout << "\n";
 }
 
 int main()
@@ -168,7 +212,6 @@ int main()
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    // Инициализация продукций грамматики
     productions[1] = {'S', string("aSbA")};
     productions[2] = {'S', string("aB")};
     productions[3] = {'S', string("A")};
@@ -181,7 +224,6 @@ int main()
     string line;
     if (!getline(cin, line))
         return 0;
-    // обрезать пробелы
     while (!line.empty() && isspace(line.back()))
         line.pop_back();
     while (!line.empty() && isspace(line.front()))
@@ -190,7 +232,6 @@ int main()
     vector<int> seq;
     if (line.find(' ') != string::npos)
     {
-        // разделить по пробелам (поддержка многозначных чисел)
         stringstream ss(line);
         int x;
         while (ss >> x)
@@ -198,13 +239,10 @@ int main()
     }
     else
     {
-        // нет пробелов -> считаем каждый символ цифрой (например, "12332")
         for (char c : line)
         {
             if (isdigit(c))
-            {
                 seq.push_back(c - '0');
-            }
             else if (!isspace(c))
             {
                 cerr << "Неожиданный символ во входе: '" << c << "'\n";
@@ -219,10 +257,9 @@ int main()
         return 0;
     }
 
-    // стартовое дерево: один узел S
     auto start = make_shared<Node>('S');
-
     shared_ptr<Node> result_tree = nullptr;
+
     bool ok = dfs_try(start, seq, 0, result_tree);
 
     if (!ok)
@@ -231,25 +268,21 @@ int main()
         return 0;
     }
 
-    // Построить линейную скобочную форму
     string lin = linear_form(result_tree);
 
-    // Построить терминальную строку v (конкатенация листьев)
     vector<shared_ptr<Node>> leaves;
     collect_leaves(result_tree, leaves);
     string v;
     for (auto &l : leaves)
         v.push_back(l->sym);
 
-    // Построить последовательность правил левого вывода из дерева
     vector<int> left_seq;
     collect_leftmost_seq(result_tree, left_seq);
 
-    cout << "Последовательность правил может быть применена.\n";
-    cout << "\nПолученная терминальная цепочка v = \"" << v << "\"\n";
-    cout << "\nЛинейная скобочная форма дерева вывода:\n";
-    cout << lin << "\n";
-    cout << "\nПоследовательность правил при левом выводе, эквивалентном выводу v:\n";
+    cout << v << "\n";
+    cout << "\nЛинейная скобочная форма дерева вывода:\n"
+         << lin << "\n";
+    cout << "\nПоследовательность правил при левом выводе:\n";
     for (size_t i = 0; i < left_seq.size(); ++i)
     {
         if (i)
@@ -257,5 +290,8 @@ int main()
         cout << left_seq[i];
     }
     cout << "\n";
+
+    leftmost_derivation(left_seq);
+
     return 0;
 }
