@@ -1,0 +1,59 @@
+-- Добавление записей
+INSERT INTO public.house (id, address) VALUES
+(1, 'ул. Ленина, д. 10'),
+(2, 'ул. Пушкина, д. 15'),
+(3, 'ул. Гагарина, д. 20'),
+(4, 'ул. Советская, д. 25');
+
+INSERT INTO public.work (id, house_id, name) VALUES
+(1, 1, 'Ремонт крыши'),
+(2, 2, 'Покраска фасада'),
+(3, 3, 'Замена лифта'),
+(4, 4, 'Уборка подвала');
+
+INSERT INTO public.contractor (id, name, specialization) VALUES
+(1, 'ООО СтройСервис', 'Строительные работы'),
+(2, 'ИП Иванов', 'Малярные работы'),
+(3, 'ООО ЛифтМастер', 'Лифтовые работы'),
+(4, 'ЧистоДом', 'Клининг');
+
+INSERT INTO public.work_contractor (id, work_id, contractor_id) VALUES
+(1, 1, 1),
+(2, 2, 2),
+(3, 3, 3),
+(4, 4, 4);
+
+INSERT INTO public.resident (id, name, room, house_id) VALUES
+(1, 'Петров Иван', 12, 1),
+(2, 'Сидорова Анна', 34, 2),
+(3, 'Иванов Петр', 56, 3),
+(4, 'Кузнецова Мария', 78, 4);
+
+INSERT INTO public.bill (id, amount, bill_date, resident_id) VALUES
+(1, 5000, '2025-01-15', 1),
+(2, 6000, '2025-02-15', 2),
+(3, 7000, '2025-03-15', 3),
+(4, 8000, '2025-04-15', 4);
+
+INSERT INTO public.payment (id, amount, payment_date, bill_id) VALUES
+(1, 5000, '2025-01-20', 1),
+(2, 6000, '2025-02-20', 2),
+(3, 7000, '2025-03-20', 3),
+(4, 8000, '2025-04-20', 4);
+
+-- Изменение записей
+UPDATE public.house SET address = 'ул. Ленина, д. 100' WHERE id = 1;
+UPDATE public.work SET name = 'Капитальный ремонт крыши' WHERE id = 1;
+UPDATE public.contractor SET name = 'ООО Новый Строй' WHERE id = 1;
+UPDATE public.resident SET name = 'Петров Илья' WHERE id = 1;
+UPDATE public.bill SET amount = 5500 WHERE id = 1;
+UPDATE public.payment SET amount = 5500 WHERE id = 1;
+
+-- Удаление записей
+DELETE FROM public.payment WHERE id = 4;
+DELETE FROM public.bill WHERE id = 4;
+DELETE FROM public.resident WHERE id = 4;
+DELETE FROM public.work_contractor WHERE id = 4;
+DELETE FROM public.contractor WHERE id = 4;
+DELETE FROM public.work WHERE id = 4;
+DELETE FROM public.house WHERE id = 4;
