@@ -1,1 +1,5 @@
-.drawio
+*.drawio
+*.drawio.bkp
+*.obj
+*.exe
+Теория автоматов и формальных языков/Lab1/.vscode/settings.json
