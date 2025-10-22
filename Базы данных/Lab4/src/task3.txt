@@ -1,0 +1,15 @@
+select sum(b.total_amount) as total_amount from bookings b
+where b.book_date >= '2025-09-01' and b.book_date < '2025-10-01';
+
+
+select t.passenger_name, t.passenger_id from tickets t
+group by t.passenger_name, t.passenger_id, t.book_ref
+having count(t.outbound) > 1
+limit 100
+
+
+select r.departure_airport, min(r.arrival_airport) as arrival_airport, a.airport_name
+from routes r
+join airports a on r.departure_airport = a.airport_code
+group by r.departure_airport, a.airport_name
+having count(distinct r.arrival_airport) = 1;

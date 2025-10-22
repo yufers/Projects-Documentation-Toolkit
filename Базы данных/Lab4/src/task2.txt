@@ -1,0 +1,6 @@
+select r.name, b.resource_type, (sum(b.amount) - sum(p.amount)) as debt from resident r
+left join bill b on r.id = b.resident_id
+left join payment p on b.id = p.bill_id
+group by r.name, b.resource_type
+having sum(b.amount) > sum(p.amount)
+order by debt

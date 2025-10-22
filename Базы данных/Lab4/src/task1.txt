@@ -1,0 +1,17 @@
+select count(*) as rooms_count, h.address from resident r
+left join house h on r.house_id = h.id
+where r.room > 10
+group by h.address
+order by rooms_count desc;
+
+
+select count(*) as total_work, c.specialization from contractor c
+left join work_contractor wc on c.id = wc.contractor_id
+left join work w on wc.work_id = w.id
+group by c.specialization
+
+
+select min(b.amount) as avg_bill, r.name from resident r
+left join bill b on r.id = b.resident_id
+group by r.name
+order by avg_bill desc
